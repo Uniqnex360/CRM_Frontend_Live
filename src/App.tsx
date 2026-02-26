@@ -161,8 +161,6 @@ function App() {
               padding: "16px",
               borderRadius: "8px",
             },
-            success: { icon: "✅" },
-            error: { icon: "❌" },
           }}
         />
         <Routes>
