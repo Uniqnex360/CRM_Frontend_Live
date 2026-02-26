@@ -56,6 +56,7 @@ export class CompanyService {
     }
 
     const data = await api.get("/company/read_company", params);
+    console.log('dataaa',data)
     return data as Company[];
   }
 }

@@ -57,7 +57,7 @@ function DashboardLayout() {
   const { user, logout } = useAuth(); 
 
   const tabs = [
-    { id: "search" as Tab, label: "Search Leads", icon: Search },
+    { id: "search" as Tab, label: "Leads", icon: Search },
     { id: "companies" as Tab, label: "Companies", icon: Building2 },
     { id: "lists" as Tab, label: "Lists", icon: List },
     { id: "enrichment" as Tab, label: "Lead Enrichment", icon: Sparkles },

@@ -38,3 +38,34 @@ export interface LeadData {
   completeness: number;
   lastUpdated: string;
 }
+export interface LeadAPIResponse {
+  id: string;
+  name: string;
+  title: string;
+  email_id: string;
+  company_id: string;
+  source: string;
+  hq_no: string;
+  direct_no: string;
+  vertical: string;
+  city: string;
+  country: string;
+  site_search: string[];
+  added_to_favourites: boolean;
+}
+
+export interface Lead {
+  id: string;
+  firstName: string;
+  lastName: string;
+  name: string; 
+  title: string;
+  company: string;
+  email: string;
+  emailStatus: 'verified' | 'unverified' | 'likely';
+  phone: string;
+  location: string;
+  industry: string;
+  keywords: string[];
+  added_to_favourites: boolean;
+}
