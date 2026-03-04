@@ -1,5 +1,5 @@
-export interface Lead{
- id: string;
+export interface Lead {
+  id: string;
   firstName: string;
   lastName: string;
   title: string;
@@ -11,7 +11,7 @@ export interface Lead{
   country?: string;
   email: string;
   emailStatus: "verified" | "unverified" | "likely";
-  added_to_favourites:boolean
+  added_to_favourites: boolean;
   phone?: string;
   mobilePhone?: string;
   directPhone?: string;
@@ -26,7 +26,7 @@ export interface Lead{
 }
 export interface LeadData {
   id: string;
-  type: 'person' | 'company';
+  type: "person" | "company";
   name: string;
   email?: string;
   phone?: string;
@@ -55,17 +55,41 @@ export interface LeadAPIResponse {
 }
 
 export interface Lead {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
-  name: string; 
+  name: string;
   title: string;
   company: string;
-  email: string;
-  emailStatus: 'verified' | 'unverified' | 'likely';
-  phone: string;
-  location: string;
-  industry: string;
+  email_id: string;
+  company_name?: string;
+  domain?: string;
+  url?: string;
+  source?: string;
+  source_link?: string;
+  company_linkedin_source?: string;
+  personal_linkedin_source?: string;
+  month?: string | null;
+  date?: string | null;
+  primary_number?: string | null;
+  hq_no?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  geo?: string | null;
+  founding_year?: string | null;
+  gross_revenue?: string | null;
+  employee_size?: string | null;
+  amazon_existing?: string | null;
+  vertical?: string | null;
+  sub_category?: string | null;
+  product_count?: string | null;
+  cms?: string | null;
+  industry?: string | null;
+  emailStatus: "verified" | "unverified" | "likely";
+  phone?: string;
+  location?: string;
   keywords: string[];
   added_to_favourites: boolean;
 }

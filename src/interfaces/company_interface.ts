@@ -1,4 +1,3 @@
-
 export interface Company {
   id: string;
   name: string;
@@ -34,13 +33,13 @@ export interface Company {
   location: string;
   founded: number;
   description: string;
-  technologies: string[]; 
+  technologies: string[];
   companyEmail: string;
   companyPhone: string;
   linkedinUrl: string;
-  contacts: CompanyContact[]; 
+  contacts: CompanyContact[];
 }
-export interface CompanyAPIResponse {
+export interface CompanyResponse {
   id: string;
   company_name: string;
   domain: string | null;
@@ -51,7 +50,14 @@ export interface CompanyAPIResponse {
   city: string | null;
   country: string | null;
   founded: string | number | null;
-  keywords: string[] | string; 
+  keywords: string[] | string;
   links: string[] | string;
   contact: string | null;
+}
+
+export interface CompanyAPIResponse {
+  items: CompanyResponse[];
+  page: number;
+  total: number;
+  size: number;
 }
