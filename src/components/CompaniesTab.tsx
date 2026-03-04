@@ -18,6 +18,7 @@ import {
 import toast from "react-hot-toast";
 import { CompanyService } from "../services/companyService";
 import { Company } from "../interfaces/company_interface";
+import AppPagination from "./common/AppPaginatin";
 const companyService = new CompanyService();
 
 export default function CompaniesTab() {
@@ -35,6 +36,9 @@ export default function CompaniesTab() {
     revenue: "",
     location: "",
   });
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const size = 50;
 
   const toggleCompany = (id: string) => {
     setSelectedCompanies((prev) =>
@@ -50,8 +54,9 @@ export default function CompaniesTab() {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const data = await companyService.getCompanies(searchQuery, filters);
-      setCompanies(data || []);
+      const data = await companyService.getCompanies(searchQuery, filters, page);
+      setCompanies(data?.items || []);
+      setTotal(data?.total)
     } catch (error) {
       console.error("Failed to fetch companies", error);
       toast.error("Failed to load companies");
@@ -64,7 +69,7 @@ export default function CompaniesTab() {
       fetchCompanies();
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, page]);
 
   const handleExport = async () => {
     try {
@@ -242,7 +247,17 @@ export default function CompaniesTab() {
               </p>
             )}
           </div>
+          
           <div className="flex gap-2">
+            <div className="">
+              <AppPagination
+              total={total}
+              page={page}
+              size={size}
+              onPageChange={setPage}
+            />
+
+            </div>
             <button
               onClick={handleExport}
               className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm"
@@ -257,7 +272,7 @@ export default function CompaniesTab() {
             Loading companies...
           </div>
         )}
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[450px] overflow-y-auto">
           {!loading &&
             companies.map((company) => {
               const isExpanded = expandedCompanies.includes(company.id);
@@ -394,71 +409,75 @@ export default function CompaniesTab() {
                       </button>
 
                       {isExpanded && (
-  <div className="mt-4 pt-4 border-t border-slate-200">
-    <h4 className="text-sm font-semibold text-slate-900 mb-3">
-      Key Contacts
-    </h4>
-    <div className="space-y-3">
-      {company.contacts && company.contacts.length > 0 ? (
-        company.contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-semibold">
-                {contact.name 
-                  ? contact.name.split(" ").map((n) => n[0]).join("").slice(0, 2)
-                  : "U"}
-              </div>
-              <div>
-                <p className="font-medium text-slate-900">
-                  {contact.name || "Unknown Name"}
-                </p>
-                <p className="text-xs text-slate-600">
-                  {contact.title || "No Title"}
-                </p>
-              </div>
-            </div>
+                        <div className="mt-4 pt-4 border-t border-slate-200">
+                          <h4 className="text-sm font-semibold text-slate-900 mb-3">
+                            Key Contacts
+                          </h4>
+                          <div className="space-y-3">
+                            {company.contacts && company.contacts.length > 0 ? (
+                              company.contacts.map((contact) => (
+                                <div
+                                  key={contact.id}
+                                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-semibold">
+                                      {contact.name
+                                        ? contact.name
+                                            .split(" ")
+                                            .map((n) => n[0])
+                                            .join("")
+                                            .slice(0, 2)
+                                        : "U"}
+                                    </div>
+                                    <div>
+                                      <p className="font-medium text-slate-900">
+                                        {contact.name || "Unknown Name"}
+                                      </p>
+                                      <p className="text-xs text-slate-600">
+                                        {contact.title || "No Title"}
+                                      </p>
+                                    </div>
+                                  </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-3 h-3 text-slate-400" />
-                  <a
-                    href={`mailto:${contact.email}`}
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    {contact.email || "No Email"}
-                  </a>
-                </div>
-                {contact.phone && (
-                  <div className="flex items-center gap-2 text-xs text-slate-600 mt-1 justify-end">
-                    <Phone className="w-3 h-3 text-slate-400" />
-                    {contact.phone}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex flex-col items-end">
-                <span className="text-xs font-medium text-green-600">
-                  {contact.relevance || 0}%
-                </span>
-                <span className="text-[10px] text-slate-500 uppercase">
-                  match
-                </span>
-              </div>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-6 bg-slate-50 rounded-lg text-slate-500 text-sm">
-          No contacts found for this company.
-        </div>
-      )}
-    </div>
-  </div>
-)}
+                                  <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <Mail className="w-3 h-3 text-slate-400" />
+                                        <a
+                                          href={`mailto:${contact.email}`}
+                                          className="text-blue-600 hover:text-blue-700"
+                                        >
+                                          {contact.email || "No Email"}
+                                        </a>
+                                      </div>
+                                      {contact.phone && (
+                                        <div className="flex items-center gap-2 text-xs text-slate-600 mt-1 justify-end">
+                                          <Phone className="w-3 h-3 text-slate-400" />
+                                          {contact.phone}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-xs font-medium text-green-600">
+                                        {contact.relevance || 0}%
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 uppercase">
+                                        match
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 bg-slate-50 rounded-lg text-slate-500 text-sm">
+                                No contacts found for this company.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
