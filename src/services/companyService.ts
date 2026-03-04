@@ -2,7 +2,24 @@ import { api, API_BASE_URL } from "../lib/api";
 import { Company } from '../interfaces/company_interface';
 
 export class CompanyService {
-  
+   private cleanArray(input: string[] | string | null): string[] {
+    if (!input) return [];
+    if (Array.isArray(input)) {
+      if (input.length > 0 && typeof input[0] === 'string' && input[0].startsWith('[')) {
+        try {
+          return JSON.parse(input[0]);
+        } catch (e) {
+          return input;
+        }
+      }
+      return input;
+    }
+    return [];
+  }
+  private findLinkedIn(links: string[]): string {
+    const cleanLinks = this.cleanArray(links);
+    return cleanLinks.find(link => link.toLowerCase().includes('linkedin')) || '';
+  }
   async exportCompany() {
     const token = localStorage.getItem("access_token");
 
@@ -39,25 +56,50 @@ export class CompanyService {
   return await api.put(`/company/update_company/${id}`, data);
 }
 
-  async getCompanies(searchQuery: string, filters: any) {
+  async getCompanies(searchQuery: string, filters: any): Promise<Company[]> {
     const params: Record<string, string> = {};
-    
-    if (searchQuery) {
-      params.keyword = searchQuery;
-    }
-    if (filters.industry) {
-      params.vertical = filters.industry;
-    }
-    if (filters.employeeCount) {
-        params.employees_count = filters.employeeCount;
-    }
-    if (filters.revenue) {
-        params.revenue = filters.revenue;
-    }
+    if (searchQuery) params.keyword = searchQuery;
+    if (filters.industry) params.vertical = filters.industry;
+    if (filters.revenue) params.revenue = filters.revenue;
+    if (filters.employeeCount) params.employees_count = filters.employeeCount;
 
-    const data = await api.get("/company/read_company", params);
-    console.log('dataaa',data)
-    return data as Company[];
+    
+    const rawData = await api.get("/company/read_company", params) as CompanyAPIResponse[];
+
+    
+    return rawData.map((item) => {
+      
+      const location = [item.city, item.country].filter(Boolean).join(", ");
+
+      
+      let foundedYear = 0;
+      if (item.founded) {
+        foundedYear = parseInt(String(item.founded).split('.')[0]);
+      }
+
+      
+      const technologies = this.cleanArray(item.keywords);
+
+      
+      const linkedinUrl = this.findLinkedIn(this.cleanArray(item.links));
+
+      return {
+        id: item.id,
+        name: item.company_name, 
+        domain: item.domain || "",
+        industry: item.domain || "General", 
+        employeeCount: String(item.employees_count || ""),
+        revenue: String(item.revenue || ""),
+        location: location,
+        founded: foundedYear,
+        description: item.description || "",
+        technologies: technologies, 
+        companyEmail: item.company_email || "",
+        companyPhone: item.contact || "", 
+        linkedinUrl: linkedinUrl,
+        contacts: [] 
+      };
+    });
   }
 }
 
