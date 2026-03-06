@@ -93,7 +93,13 @@ export default function SearchTab() {
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const data = await leadService.getLeads(searchQuery, filters, page, sortConfig.key, sortConfig.direction);
+      const data = await leadService.getLeads(
+        searchQuery,
+        filters,
+        page,
+        sortConfig.key,
+        sortConfig.direction,
+      );
       setLeads(data?.items);
       setTotal(data?.total);
     } catch (error) {
@@ -571,7 +577,7 @@ export default function SearchTab() {
                         <div className="flex items-center gap-2">
                           <Briefcase className="w-4 h-4 text-slate-400 flex-shrink-0" />
                           <span className="text-sm text-slate-700">
-                            {contact.title}
+                            {contact.title || "--"}
                           </span>
                         </div>
                       </td>
