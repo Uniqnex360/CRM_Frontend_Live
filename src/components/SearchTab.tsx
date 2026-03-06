@@ -15,6 +15,9 @@ import {
   Tag,
   Upload,
   Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { LeadService } from "../services/leadService";
 import toast from "react-hot-toast";
@@ -43,6 +46,14 @@ export default function SearchTab() {
     industry: "",
     keywords: "",
   });
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null;
+    direction: "asc" | "desc";
+  }>({
+    key: null,
+    direction: "asc",
+  });
+  const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const size = 50;
@@ -54,10 +65,35 @@ export default function SearchTab() {
       setSelectedLeads(leads.map((l) => l.id));
     }
   };
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "asc" };
+    });
+  };
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) {
+      return <ArrowUpDown size={14} />;
+    }
+
+    return sortConfig.direction === "asc" ? (
+      <ArrowUp size={14} />
+    ) : (
+      <ArrowDown size={14} />
+    );
+  };
+
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const data = await leadService.getLeads(searchQuery, filters, page);
+      const data = await leadService.getLeads(searchQuery, filters, page, sortConfig.key, sortConfig.direction);
       setLeads(data?.items);
       setTotal(data?.total);
     } catch (error) {
@@ -73,7 +109,7 @@ export default function SearchTab() {
       fetchLeads();
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters, page]);
+  }, [searchQuery, filters, page, sortConfig]);
 
   const handleToggleFavorite = async (id: string, currentStatus: boolean) => {
     try {
@@ -122,12 +158,24 @@ export default function SearchTab() {
   };
   const handleExport = async () => {
     try {
-      await leadService.exportLeads();
+      setExporting(true);
+      if (selectedLeads.length > 0) {
+        const payload = {
+          lead_ids: selectedLeads,
+        };
+        await leadService.exportLeads(payload);
+      } else {
+        await leadService.exportLeads();
+      }
     } catch (error) {
       toast.error("Failed to export");
+    } finally {
+      setExporting(false);
     }
   };
   const toggleLeadSelection = (id: string) => {
+    if (!id) return;
+
     setSelectedLeads((prev) =>
       prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id],
     );
@@ -161,6 +209,9 @@ export default function SearchTab() {
       console.log(error);
     }
   };
+
+  const hasActiveFilters =
+    searchQuery || Object.values(filters).some((value) => value !== "");
 
   return (
     <div className="space-y-2 flex flex-col h-[calc(100vh - 10%)]">
@@ -275,7 +326,7 @@ export default function SearchTab() {
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
-            <input
+            {/* <input
               type="text"
               placeholder="Department"
               value={filters.department}
@@ -283,8 +334,8 @@ export default function SearchTab() {
                 setFilters({ ...filters, department: e.target.value })
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-            <input
+            /> */}
+            {/* <input
               type="text"
               placeholder="Seniority"
               value={filters.seniority}
@@ -292,7 +343,7 @@ export default function SearchTab() {
                 setFilters({ ...filters, seniority: e.target.value })
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
+            /> */}
             <input
               type="text"
               placeholder="Industry"
@@ -302,7 +353,26 @@ export default function SearchTab() {
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
-            <input
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setFilters({
+                    title: "",
+                    company: "",
+                    location: "",
+                    department: "",
+                    seniority: "",
+                    industry: "",
+                    keywords: "",
+                  });
+                  setSearchQuery("");
+                }}
+                className="px-3 py-1.5 text-sm font-medium text-red-600 rounded-md text-left"
+              >
+                Clear All
+              </button>
+            )}
+            {/* <input
               type="text"
               placeholder="Keywords"
               value={filters.keywords}
@@ -310,21 +380,19 @@ export default function SearchTab() {
                 setFilters({ ...filters, keywords: e.target.value })
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
+            /> */}
           </div>
         )}
 
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             <p className="text-sm text-slate-600">
-              <span className="font-semibold text-slate-900">
-                {total}
-              </span>{" "}
+              <span className="font-semibold text-slate-900">{total}</span>{" "}
               results
             </p>
-            {leads.length > 0 && (
+            {selectedLeads.length > 0 && (
               <p className="text-sm text-blue-600 font-medium">
-                {leads.length} selected
+                {selectedLeads.length} selected
               </p>
             )}
           </div>
@@ -355,10 +423,15 @@ export default function SearchTab() {
             )}
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+              disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors text-sm disabled:opacity-60"
             >
-              <Download className="w-4 h-4" />
-              Export
+              {exporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {exporting ? "Exporting..." : "Export"}
             </button>
           </div>
         </div>
@@ -377,24 +450,69 @@ export default function SearchTab() {
                         leads.length > 0
                       }
                       onChange={toggleAll}
-                      className="rounded border-slate-300"
+                      className="rounded border-slate-300 cursor-pointer"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Name
+                  </th> */}
+                  <th
+                    onClick={() => handleSort("name")}
+                    className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      Name
+                      {getSortIcon("name")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Title
+                  </th> */}
+                  <th
+                    onClick={() => handleSort("title")}
+                    className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      Title
+                      {getSortIcon("title")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Company
+                  </th> */}
+                  <th
+                    onClick={() => handleSort("company")}
+                    className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      Company
+                      {getSortIcon("company")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Industry
+                  </th> */}
+                  <th
+                    onClick={() => handleSort("industry")}
+                    className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      Industry
+                      {getSortIcon("industry")}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  <th
+                    onClick={() => handleSort("location")}
+                    className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      Location
+                      {getSortIcon("location")}
+                    </div>
+                  </th>
+                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Location
-                  </th>
+                  </th> */}
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Contact Info
                   </th>
@@ -430,7 +548,7 @@ export default function SearchTab() {
                           type="checkbox"
                           checked={selectedLeads.includes(contact.id)}
                           onChange={() => toggleLeadSelection(contact.id)}
-                          className="rounded border-slate-300"
+                          className="rounded border-slate-300 cursor-pointer"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -460,16 +578,17 @@ export default function SearchTab() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          <div>
+                          {contact.company}
+                          {/* <div>
                             <p className="text-sm text-slate-700">
-                              {contact.company}
+                              {contact.company_name}
                             </p>
-                            {contact.companyDomain && (
+                            {contact.company_name && (
                               <p className="text-xs text-slate-500">
-                                {contact.companyDomain}
+                                {contact.company_name}
                               </p>
                             )}
-                          </div>
+                          </div> */}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -529,7 +648,6 @@ export default function SearchTab() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
-                              console.log("contackt", contact)
                               handleToggleFavorite(
                                 contact.id,
                                 contact.added_to_favourites,
@@ -753,4 +871,3 @@ export default function SearchTab() {
     </div>
   );
 }
-
