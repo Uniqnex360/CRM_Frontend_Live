@@ -1,4 +1,4 @@
-import { api } from "../lib/api.ts";
+import { api, API_BASE_URL } from "../lib/api.ts";
 import { Lead } from "../interfaces/lead_interface";
 
 // Type for API response
@@ -16,10 +16,17 @@ export class LeadService {
     searchQuery: string,
     filters: any,
     page: number,
+    sort_by?: string | null,
+    sort_order?: string,
   ): Promise<LeadAPIResponse> {
     const params: Record<string, string> = {};
     if (searchQuery) params.keyword = searchQuery;
-    if (filters?.industry) params.vertical = filters.industry;
+    if (filters?.title) params.title = filters.title;
+    if (filters?.industry) params.industry = filters.industry;
+    if (filters?.company) params.company = filters.company;
+    if (filters?.location) params.location = filters.location;
+    if (sort_by) params.sort_by= sort_by;
+    if (sort_order) params.sort_order = sort_order;
 
     // Fetch raw data from API
     const rawData = (await api.get(
@@ -52,9 +59,7 @@ export class LeadService {
         lastName,
         name: item.name,
         title: item.title || "Unknown Title",
-        company: item?.company_id
-          ? "Company " + item?.company_id.slice(-4)
-          : "Unknown Company",
+        company: item?.company_name ? item.company_name : "Unknown Company",
         email: item.email_id || "",
         emailStatus,
         phone,
@@ -90,19 +95,23 @@ export class LeadService {
     return data;
   }
 
-  async exportLeads() {
+  async exportLeads(body?: any) {
     const token = localStorage.getItem("access_token");
-    const response = await fetch(`${api}/export/leads/excel`, {
-      method: "GET",
+
+    const response = await fetch(`${API_BASE_URL}/export/leads/excel`, {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
 
     if (!response.ok) throw new Error("Export failed");
 
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
     a.download = "leads_export.xlsx";
