@@ -64,7 +64,7 @@ export class LeadService {
         emailStatus,
         phone,
         location,
-        industry: item.vertical || "General",
+        industry: item.industry || item.vertical || "General",
         keywords: item.site_search || [],
         added_to_favourites: item.added_to_favourites || false,
       } as Lead;
