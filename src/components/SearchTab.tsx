@@ -290,7 +290,7 @@ export default function SearchTab() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, title, company, email, or phone..."
+              placeholder="Search by name, title, company, email, address, city, state, country, phone..."
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
