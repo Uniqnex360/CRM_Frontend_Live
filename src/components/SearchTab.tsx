@@ -507,7 +507,7 @@ export default function SearchTab() {
                       {getSortIcon("industry")}
                     </div>
                   </th>
-                  <th
+                  {/* <th
                     onClick={() => handleSort("location")}
                     className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer"
                   >
@@ -515,10 +515,10 @@ export default function SearchTab() {
                       Location
                       {getSortIcon("location")}
                     </div>
-                  </th>
-                  {/* <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Location
                   </th> */}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Location
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Contact Info
                   </th>

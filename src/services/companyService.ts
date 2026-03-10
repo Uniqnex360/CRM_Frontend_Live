@@ -94,7 +94,7 @@ export class CompanyService {
         id: item.id,
         name: item.company_name,
         domain: item.domain || "",
-        industry: item.domain || "General",
+        industry: item.domain || "--",
         employeeCount: String(item.employees_count || ""),
         revenue: String(item.revenue || ""),
         location,
