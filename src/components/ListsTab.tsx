@@ -1,218 +1,352 @@
-import { useState } from 'react';
-import { Plus, Search, Users, Trash2, Edit, Download } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Plus, Search, Users, Trash2, Edit, Download } from "lucide-react";
+import toast from "react-hot-toast";
+import { useForm } from "react-hook-form";
 
-interface SavedList {
-  id: string;
-  name: string;
+import Loader from "./common/Loader";
+import Drawer from "./common/Drawer";
+import AppModal from "./common/AppModel";
+import AppFormInput from "./common/AppFormInput";
+import { ListResponse, ListService } from "../services/listService";
+
+type ListCU = {
+  id?: string;
+  list_name: string;
   description: string;
-  contactCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const mockLists: SavedList[] = [
-  {
-    id: '1',
-    name: 'Enterprise Decision Makers',
-    description: 'VPs and Directors at Fortune 500 companies',
-    contactCount: 142,
-    createdAt: '2024-01-15',
-    updatedAt: '2024-02-10'
-  },
-  {
-    id: '2',
-    name: 'Tech Startup Founders',
-    description: 'Founders and CEOs of tech startups with Series A+ funding',
-    contactCount: 87,
-    createdAt: '2024-01-20',
-    updatedAt: '2024-02-12'
-  },
-  {
-    id: '3',
-    name: 'Marketing Leaders',
-    description: 'CMOs and VPs of Marketing in SaaS companies',
-    contactCount: 215,
-    createdAt: '2024-02-01',
-    updatedAt: '2024-02-15'
-  },
-  {
-    id: '4',
-    name: 'Sales Executives - Healthcare',
-    description: 'Sales leadership in healthcare technology companies',
-    contactCount: 63,
-    createdAt: '2024-02-05',
-    updatedAt: '2024-02-14'
-  }
-];
+  type: "companies" | "lead";
+};
 
 export default function ListsTab() {
-  const [lists, setLists] = useState<SavedList[]>(mockLists);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newList, setNewList] = useState({ name: '', description: '' });
+  //data related state
+  const [lists, setLists] = useState<ListResponse[]>([]);
 
-  const filteredLists = lists.filter(list =>
-    list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    list.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  //ui related state
+  const [loading, setLoading] = useState(false);
+  const [cudLoading, setCUDLoading] = useState(false);
+  const [createModal, setCreateModal] = useState(false);
+  const [isUpdate, setIsUpdate] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleteId, setDeleteid] = useState("");
 
-  const handleCreateList = () => {
-    if (newList.name.trim()) {
-      const list: SavedList = {
-        id: String(lists.length + 1),
-        name: newList.name,
-        description: newList.description,
-        contactCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0]
-      };
-      setLists([...lists, list]);
-      setNewList({ name: '', description: '' });
-      setShowCreateModal(false);
+  //filter related state
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // service class
+  const listService = new ListService();
+
+  // Fetch Lists
+  const fetchLists = async () => {
+    try {
+      setLoading(true);
+      const response = await listService.getList();
+      setLists(response.data);
+    } catch (error) {
+      toast.error(`Error fetching lists: ${error}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteList = (id: string) => {
-    if (confirm('Are you sure you want to delete this list?')) {
-      setLists(lists.filter(list => list.id !== id));
+  useEffect(() => {
+    fetchLists();
+  }, []);
+
+  // Search Filter // remove this after search itegration from backend
+  const filteredLists = lists.filter(
+    (list) =>
+      list.list_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      list.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
+  // Create or update List
+  const { register, handleSubmit, reset, formState } = useForm<ListCU>({
+    mode: "onSubmit", // ensures validation runs only on submit
+  });
+
+  const clearForm = () => {
+    reset({
+      id: undefined,
+      list_name: "",
+      description: "",
+      type: "companies",
+    });
+  };
+
+  const onSubmit = async (data: ListCU) => {
+    try {
+      setCUDLoading(true);
+      if (!isUpdate) {
+        const response = await listService.createList(data);
+        clearForm();
+        setCreateModal(false);
+        toast.success("List Created Successfully!!");
+        fetchLists();
+      } else {
+        if (!data?.id) {
+          throw new Error("ID is required");
+        }
+        const response = await listService.updateList(data?.id, data);
+        clearForm();
+        setCreateModal(false);
+        setIsUpdate(false);
+        toast.success("List Updated Successfully");
+        fetchLists();
+      }
+    } catch (error: any) {
+      toast.error(error);
+    } finally {
+      setCUDLoading(false);
+    }
+  };
+
+  // handle edit
+  const handleEdit = (data: ListCU) => {
+    setIsUpdate(true);
+    reset(data);
+    setCreateModal(true);
+  };
+
+  // Delete List
+  const handleDeleteList = async () => {
+    try {
+      setCUDLoading(true)
+      const response = await listService.deleteList(deleteId);
+      toast.success("Delete Successfull");
+    } catch {
+      toast.error("Delete failed");
+    } finally {
+      setDeleteModal(false);
+      setCUDLoading(false)
+      fetchLists();
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Saved Lists</h2>
-          <p className="text-sm text-slate-600 mt-1">Organize and manage your contact lists</p>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Create List
-        </button>
-      </div>
+    <>
+      <div className="space-y-6">
+        {/* HEADER */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Saved Lists</h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Organize and manage your contact lists
+            </p>
+          </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-6">
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <button
+            onClick={() => {
+              setCreateModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-5 h-5" />
+            Create List
+          </button>
+        </div>
+
+        {/* MAIN CONTAINER */}
+        <div className="bg-white rounded-lg border border-slate-200 p-6 flex flex-col h-[75vh]">
+          {/* SEARCH */}
+          <div className="mb-6 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
+              placeholder="Search lists..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search lists..."
               className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {filteredLists.map((list) => (
-            <div
-              key={list.id}
-              className="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">{list.name}</h3>
-                    <p className="text-xs text-slate-500">{list.contactCount} contacts</p>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Edit list"
+          {/* SCROLLABLE LIST AREA */}
+          <div className="flex-1 overflow-y-auto pr-2">
+            {loading ? (
+              <Loader />
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {filteredLists.map((list) => (
+                  <div
+                    key={list.id}
+                    className="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-shadow"
                   >
-                    <Edit className="w-4 h-4 text-slate-600" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteList(list.id)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete list"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
-                </div>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-blue-600" />
+                        </div>
+
+                        <div>
+                          <h3 className="font-semibold text-slate-900">
+                            {list.list_name}
+                          </h3>
+
+                          <p className="text-xs text-slate-500">
+                            {list.contactCount} contacts
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <button
+                          className="p-2 hover:bg-slate-100 rounded-lg"
+                          title="Edit list"
+                          onClick={() => {
+                            handleEdit({
+                              id: list.id,
+                              list_name: list.list_name,
+                              description: list.description,
+                              type: list.type || "companies",
+                            });
+                          }}
+                        >
+                          <Edit className="w-4 h-4 text-slate-600" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setDeleteModal(true);
+                            setDeleteid(list.id);
+                          }}
+                          className="p-2 hover:bg-red-50 rounded-lg"
+                          title="Delete list"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-slate-600 mb-4">
+                      {list.description}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>
+                        Updated {new Date(list.updated_at).toLocaleDateString()}
+                      </span>
+
+                      <button className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                        <Download className="w-3 h-3" />
+                        Export
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
 
-              <p className="text-sm text-slate-600 mb-4">{list.description}</p>
-
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Updated {new Date(list.updatedAt).toLocaleDateString()}</span>
-                <button className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  Export
-                </button>
+            {!loading && filteredLists.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-slate-600">No lists found</p>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredLists.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600">No lists found</p>
+            )}
           </div>
-        )}
+        </div>
       </div>
+      {/* CREATE LIST MODAL */}
+      <Drawer
+        title={isUpdate ? "Update List" : "Create List"}
+        isOpen={createModal}
+        onClose={() => {
+          clearForm();
+          setCreateModal(false);
+          setIsUpdate(false);
+        }}
+      >
+        <div className="p-4 w-full h-full bg-white rounded shadow-md">
+          <div className="p-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* Type */}
+              <AppFormInput<ListCU>
+                label="Type"
+                name="type"
+                type="select"
+                register={register}
+                rules={{ required: "Type is required" }}
+                options={[
+                  { id: "companies", value: "Company" },
+                  { id: "people", value: "Lead" },
+                ]}
+                error={formState.errors.type}
+                formState={formState}
+              />
+              {/* list name */}
+              <AppFormInput<ListCU>
+                label="Name"
+                name="list_name"
+                placeholder="List Name"
+                register={register}
+                rules={{ required: "List Name is required" }}
+                error={formState.errors.list_name}
+                formState={formState}
+              />
+              {/* description */}
+              <AppFormInput<ListCU>
+                label="Description"
+                name="description"
+                type="textarea"
+                placeholder="Descriptoin"
+                register={register}
+                error={formState.errors.description}
+                formState={formState}
+              />
 
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Create New List</h3>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  List Name
-                </label>
-                <input
-                  type="text"
-                  value={newList.name}
-                  onChange={(e) => setNewList({ ...newList, name: e.target.value })}
-                  placeholder="e.g., Enterprise Decision Makers"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={newList.description}
-                  onChange={(e) => setNewList({ ...newList, description: e.target.value })}
-                  placeholder="Describe this list..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3">
+              {/* Submit Button */}
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                type="submit"
+                disabled={cudLoading}
+                className={`w-full py-2 px-4 rounded text-white ${
+                  cudLoading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
               >
-                Cancel
+                {cudLoading
+                  ? isUpdate
+                    ? "Updating..."
+                    : "Creating..."
+                  : isUpdate
+                    ? "Update Lead"
+                    : "Create Lead"}
               </button>
-              <button
-                onClick={handleCreateList}
-                disabled={!newList.name.trim()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Create List
-              </button>
-            </div>
+            </form>
           </div>
         </div>
-      )}
-    </div>
+      </Drawer>
+      {/* Delete List MODAL */}
+      <AppModal
+        title="Delete List"
+        isOpen={deleteModal}
+        onClose={() => {
+          setDeleteModal(false);
+        }}
+      >
+        <div className="p-4 text-center">
+          <p className="text-slate-900 text-lg">
+            Are you sure you want to delete this list?
+          </p>
+
+          {/* <p className="text-xs text-slate-800 mt-1">
+            This action cannot be undone.
+          </p> */}
+
+          <div className="flex justify-center gap-3 mt-6">
+            <button
+              onClick={() => setDeleteModal(false)}
+              className="px-4 py-2 text-sm border border-slate-300 rounded-md hover:bg-slate-100 transition"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleDeleteList}
+              className="px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700 transition"
+            >
+              {cudLoading ? "Deleting" : "Delete"}
+            </button>
+          </div>
+        </div>
+      </AppModal>
+    </>
   );
 }

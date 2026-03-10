@@ -45,10 +45,10 @@ export const api = {
     const data = await response.json();
     return {
       ok: response.ok,
-      res: response.status === 200 ? "success": "error",
+      res: response.status === 200 ? "success" : "error",
       status: response.status, // HTTP status code, e.g., 200, 400
       statusText: response.statusText, // "OK", "Bad Request"
-      data, 
+      data,
     };
   },
   patch: async (endpoint: string, body: any) => {
@@ -58,6 +58,29 @@ export const api = {
       body: JSON.stringify(body),
     });
     if (!response.ok) throw new Error(`Error occured :${response.statusText}`);
+    return response.json();
+  },
+  put: async (endpoint: string, body: any) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "PUT",
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) throw new Error(`Error occured :${response.statusText}`);
+
+    return response.json();
+  },
+  delete: async (endpoint: string) => {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error occured :${response.statusText}`);
+    }
+
     return response.json();
   },
 };
