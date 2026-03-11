@@ -90,7 +90,7 @@ function DashboardLayout() {
   return (
     <div className="min-h-screen w-full bg-slate-50">
       {/* parent div for flex */}
-      <div className="h-screen flex flex-col">
+      <div className="h-screen flex flex-col overflow-hidden">
         {/* header */}
         <header className="border-b border-slate-200 sticky top-0">
           <div className="mx-auto px-6 py-4">

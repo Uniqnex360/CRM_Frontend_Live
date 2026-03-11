@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Edit,
 } from "lucide-react";
 import { LeadService } from "../services/leadService";
 import toast from "react-hot-toast";
@@ -26,6 +27,7 @@ import { useEffect } from "react";
 import Drawer from "./common/Drawer";
 import AppPagination from "./common/AppPaginatin";
 import AppFormInput from "./common/AppFormInput";
+import { companyService } from "../services/companyService";
 const leadService = new LeadService();
 
 export default function SearchTab() {
@@ -37,6 +39,7 @@ export default function SearchTab() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [createModal, setCreateModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cudloading, setCUDLoading] = useState(false);
   const [filters, setFilters] = useState({
     title: "",
     company: "",
@@ -53,6 +56,7 @@ export default function SearchTab() {
     key: null,
     direction: "asc",
   });
+  const [isUpdate, setIsUpdate] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -203,17 +207,80 @@ export default function SearchTab() {
   });
   const onSubmit = async (data) => {
     try {
-      const response = await leadService.createLeads(data);
-      if (response.status === 200) {
-        reset();
-        setCreateModal(false);
-        toast.success("Lead Created Successfully!");
+      setCUDLoading(true);
+      if (!isUpdate) {
+        const response = await leadService.createLeads(data);
+        if (response.status === 200) {
+          clearForm();
+          setCreateModal(false);
+          toast.success("Lead Created Successfully!");
+        } else {
+          toast.error(response?.data?.detail || "Lead creation Faied");
+        }
       } else {
-        toast.error(response?.data?.detail || "Lead creation Faied");
+        if (!data?.id) {
+          throw new Error("Id not found");
+        }
+        const response = await leadService.updateLead(data.id, data);
+        if (response?.detail) {
+          toast.error(response.data?.detail);
+        } else {
+          toast.success("Lead updated successfully");
+          setCreateModal(false);
+          setIsUpdate(false)
+          fetchLeads();
+        }
       }
     } catch (error: any) {
       console.log(error);
+    } finally {
+      setCUDLoading(false);
     }
+  };
+
+  const clearForm = () => {
+    reset({
+      id: undefined,
+      name: "",
+      email_id: "",
+      industry: "",
+      company_name: "",
+      domain: "",
+      url: "",
+      company_linkedin_source: "",
+      source: "",
+      personal_linkedin_source: "",
+      phone: "",
+      location: "",
+      city: "",
+      state: "",
+      country: "",
+      address: "",
+    });
+  };
+
+  const handleEdit = async (data: any) => {
+    setIsUpdate(true);
+    reset({
+      id: data?.id,
+      company_id: data?.company_id,
+      name: data.name,
+      email_id: data.email,
+      industry: data.industry,
+      company_name: data.company,
+      domain: data.domain,
+      url: data.url, //
+      company_linkedin_source: data.company_linkedin_source,
+      source: data.source,
+      personal_linkedin_source: data.personal_linkedin_source,
+      phone: data.phone,
+      location: data.location,
+      city: data.city,
+      state: data.state,
+      country: data.country,
+      address: data.address,
+    });
+    setCreateModal(true);
   };
 
   const hasActiveFilters =
@@ -419,7 +486,7 @@ export default function SearchTab() {
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  Add to List
+                  Add Lead
                 </button>
                 <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
                   <Mail className="w-4 h-4" />
@@ -444,7 +511,7 @@ export default function SearchTab() {
 
         {/* Table section */}
         <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col flex-1 min-h-0 mb-5">
-          <div className="flex-1 max-h-[450px] overflow-y-auto">
+          <div className="flex-1 max-h-[410px] overflow-y-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                 <tr>
@@ -659,9 +726,20 @@ export default function SearchTab() {
                                 contact.added_to_favourites,
                               );
                             }}
-                            className={`p-1.5 rounded-md transition-colors ${contact.added_to_favourites ? "text-yellow-900 bg-yellow-50" : "text-slate-400 hover:bg-slate-100"}`}
+                            className={`p-1.5 rounded-md transition-colors ${contact.added_to_favourites ? "text-yellow-900 bg-yellow-300" : "text-slate-400 hover:bg-slate-100"}`}
                           >
                             <Star className="w-4 h-4 text-slate-400" />
+                          </button>
+                          <button
+                            className="p-2 hover:bg-slate-100 rounded-lg"
+                            title="Edit list"
+                            onClick={() => {
+                              handleEdit({
+                                ...contact,
+                              });
+                            }}
+                          >
+                            <Edit className="w-4 h-4 text-slate-600" />
                           </button>
                           {contact.linkedinUrl && (
                             <a
@@ -692,10 +770,10 @@ export default function SearchTab() {
       </div>
 
       <Drawer
-        title="Create Lead"
+        title={isUpdate ? "Update Lead" : "Create Lead"}
         isOpen={createModal}
         onClose={() => {
-          (setCreateModal(false), reset());
+          (setCreateModal(false), clearForm(), setIsUpdate(false));
         }}
       >
         <div className="p-4 w-full h-full bg-white rounded shadow-md">
@@ -858,17 +936,23 @@ export default function SearchTab() {
                 formState={formState}
               />
 
-              {/* Submit Button */}
+              {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={cudloading}
                 className={`w-full py-2 px-4 rounded text-white ${
-                  loading
+                  cudloading
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-blue-500 hover:bg-blue-600"
                 }`}
               >
-                {loading ? "Creating..." : "Create Lead"}
+                {cudloading
+                  ? isUpdate
+                    ? "Updating..."
+                    : "Creating..."
+                  : isUpdate
+                    ? "Update Company"
+                    : "Create Company"}
               </button>
             </form>
           </div>

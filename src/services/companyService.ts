@@ -1,5 +1,10 @@
 import { api, API_BASE_URL } from "../lib/api";
-import { Company, CompanyResponse, CompanyAPIResponse } from "../interfaces/company_interface";
+import {
+  Company,
+  CompanyResponse,
+  CompanyAPIResponse,
+  CompanyCreateUpdate,
+} from "../interfaces/company_interface";
 
 export class CompanyService {
   private cleanArray(input: string[] | string | null): string[] {
@@ -26,13 +31,15 @@ export class CompanyService {
       cleanLinks.find((link) => link.toLowerCase().includes("linkedin")) || ""
     );
   }
-  async exportCompany() {
+  async exportCompany(data?: any) {
     const token = localStorage.getItem("access_token");
 
     const response = await fetch(`${API_BASE_URL}/export/company/excel`, {
-      method: "GET",
+      method: "POST",
+      body: data ? JSON.stringify(data) : undefined,
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
@@ -58,14 +65,11 @@ export class CompanyService {
     const data = await api.postForm("/company/create_company", formData);
     return data;
   }
-  async updateCompany(id: string, data: Partial<Company>) {
-    return await api.put(`/company/update_company/${id}`, data);
-  }
 
   async getCompanies(
     searchQuery: string,
     filters: any,
-    page:number
+    page: number,
   ): Promise<CompanyAPIResponse> {
     const params: Record<string, string> = {};
 
@@ -81,30 +85,33 @@ export class CompanyService {
 
     const mappedItems: CompanyResponse[] = rawData.items.map((item) => {
       const location = [item.city, item.country].filter(Boolean).join(", ");
-
-      let foundedYear = 0;
-      if (item.founded) {
-        foundedYear = parseInt(String(item.founded).split(".")[0]);
-      }
-
+      console.log("item", item);
+      const foundedYear =
+        item.founding_year != null
+          ? String(item.founding_year).split(".")[0]
+          : null;
       const technologies = this.cleanArray(item.keywords);
-      const linkedinUrl = this.findLinkedIn(this.cleanArray(item.links));
+      // const linkedinUrl = this.findLinkedIn(this.cleanArray(item.links));
 
       return {
-        id: item.id,
+        id: item._id,
         name: item.company_name,
-        domain: item.domain || "",
-        industry: item.domain || "--",
-        employeeCount: String(item.employees_count || ""),
-        revenue: String(item.revenue || ""),
+        domain_url: item.domain_url || "",
+        industry: item.industry || "--",
+        employeeCount: String(item.employee_size || ""),
+        revenue: String(item.gross_revenue || ""),
+        country: item.country || "",
         location,
+        amazon_existing: item.amazon_existing,
         founded: foundedYear,
         description: item.description || "",
         technologies,
         companyEmail: item.company_email || "",
         companyPhone: item.contact || "",
-        linkedinUrl,
-        contacts: [],
+        linkedinUrl: item.company_linkedin_source || "",
+        is_active: item.is_active,
+        added_to_favourites: item.added_to_favourites,
+        leads: item.leads,
       };
     });
 
@@ -112,6 +119,23 @@ export class CompanyService {
       ...rawData,
       items: mappedItems,
     };
+  }
+
+  async createCompany(data: Partial<CompanyCreateUpdate>) {
+    const formData = new FormData();
+    formData.append("company", JSON.stringify(data));
+    const result = await api.postForm("/company/create_company/", formData);
+    return result;
+  }
+
+  async updateCompany(id: string, data: Partial<CompanyCreateUpdate>) {
+    const result = await api.put(`/company/update_company/${id}/`, data);
+    return result;
+  }
+
+  async handlePatch(id: string, data: any) {
+    const result = api.patch(`/company/company_status/${id}`, data);
+    return result;
   }
 }
 

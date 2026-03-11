@@ -23,6 +23,7 @@ export interface Lead {
   photoUrl?: string;
   companySize?: string;
   revenue?: string;
+  company_id?: string
 }
 export interface LeadData {
   id: string;
