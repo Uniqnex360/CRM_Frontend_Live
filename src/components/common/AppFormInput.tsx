@@ -8,7 +8,7 @@ import {
 } from "react-hook-form";
 
 interface SelectOption {
-  id: string;
+  id: string | number | boolean;
   value: string;
 }
 
@@ -22,7 +22,7 @@ interface AppFormInputProps<T extends FieldValues> {
   error?: FieldError;
   className?: string;
   formState?: UseFormStateReturn<T>;
-  options?: SelectOption[]; // for select & radio
+  options?: SelectOption[];
 }
 
 const AppFormInput = <T extends FieldValues>({
@@ -46,7 +46,7 @@ const AppFormInput = <T extends FieldValues>({
   }`;
 
   return (
-    <div className={`mb-2 ${className} w-full`}>
+    <div className={`mb-3 ${className} w-full`}>
       <label className="block mb-1 text-gray-700 font-medium">
         {label} {rules?.required && <span className="text-red-500">*</span>}
       </label>
@@ -66,7 +66,7 @@ const AppFormInput = <T extends FieldValues>({
         <select {...register(name, rules)} className={inputClass}>
           <option value="">Select {label}</option>
           {options.map((option) => (
-            <option key={option.id} value={option.id}>
+            <option key={String(option.id)} value={String(option.id)}>
               {option.value}
             </option>
           ))}
@@ -75,17 +75,24 @@ const AppFormInput = <T extends FieldValues>({
 
       {/* CHECKBOX */}
       {type === "checkbox" && (
-        <input type="checkbox" {...register(name, rules)} className="h-4 w-4" />
+        <input
+          type="checkbox"
+          {...register(name, rules)}
+          className="h-4 w-4 cursor-pointer"
+        />
       )}
 
       {/* RADIO */}
       {type === "radio" && (
-        <div className="flex gap-4">
+        <div className="flex gap-4 pt-1">
           {options.map((option) => (
-            <label key={option.id} className="flex items-center gap-2">
+            <label
+              key={String(option.id)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
               <input
                 type="radio"
-                value={option.id}
+                value={String(option.id)}
                 {...register(name, rules)}
               />
               {option.value}
@@ -95,7 +102,7 @@ const AppFormInput = <T extends FieldValues>({
       )}
 
       {/* DEFAULT INPUT TYPES */}
-      {!["textarea", "select", "checkbox", "radio"].includes(type || "") && (
+      {!["textarea", "select", "checkbox", "radio"].includes(type) && (
         <input
           type={type}
           {...register(name, rules)}

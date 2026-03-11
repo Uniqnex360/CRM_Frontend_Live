@@ -67,6 +67,15 @@ export class LeadService {
         industry: item.industry || item.vertical || "--",
         keywords: item.site_search || [],
         added_to_favourites: item.added_to_favourites || false,
+        domain: item.domain,
+        company_linkedin_source: item.company_linkedin_source,
+        source: item.source,
+        personal_linkedin_source: item.personal_linkedin_source,
+        city: item.city,
+        state: item.state,
+        country: item.country,
+        address: item.address,
+        company_id: item.company_id
       } as Lead;
     });
 
