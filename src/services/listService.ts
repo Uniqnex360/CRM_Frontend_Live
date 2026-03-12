@@ -47,4 +47,10 @@ export class ListService {
     const result = await api.delete(`/list/${id}/`)
     return result
   }
+
+  // add lead to list group
+  async addLeadToGroup(id: string, payload?:any) {
+    const result = await api.post(`/list/${id}/add_members/`, payload)
+    return result;
+  }
 }
