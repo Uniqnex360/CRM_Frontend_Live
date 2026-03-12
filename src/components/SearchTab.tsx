@@ -363,7 +363,7 @@ export default function SearchTab() {
 
   const handleListGroupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setCUDLoading(true);
     try {
       for (const lg of selectedListGroups) {
         if (selectAllResults) {
@@ -389,11 +389,13 @@ export default function SearchTab() {
       console.error(error);
     } finally {
       // Clear selections and close modal **after all API calls are done**
+      setCUDLoading(false);
       setSelectedListGroups([]);
       setAddListModal(false);
       setSelectAllResults(false);
       setSelectedLeads([]);
     }
+    toast.success("Leads were added to List Group Successfully!");
   };
 
   const hasActiveFilters =
@@ -1135,9 +1137,14 @@ export default function SearchTab() {
             />
             <button
               type="submit"
-              className="mt-38 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-center"
+              className={`mt-38 px-4 py-2 rounded text-center text-white ${
+                cudloading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+              disabled={cudloading} // disables the button when submitting
             >
-              Submit
+              {cudloading ? "Submitting..." : "Submit"}
             </button>
           </form>
         </div>
