@@ -76,7 +76,8 @@ export class CompanyService {
     if (searchQuery) params.keyword = searchQuery;
     if (filters.industry) params.vertical = filters.industry;
     if (filters.revenue) params.revenue = filters.revenue;
-    if (filters.employeeCount) params.employees_count = filters.employeeCount;
+    if (filters.employeeCount) params.employee_count = filters.employeeCount;
+    if (filters.location) params.location = filters.location;
 
     const rawData = (await api.get(
       `/company/read_company?page=${page}`,
