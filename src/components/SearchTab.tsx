@@ -41,13 +41,11 @@ export default function SearchTab() {
   const [loading, setLoading] = useState(false);
   const [cudloading, setCUDLoading] = useState(false);
   const [filters, setFilters] = useState({
+    name: "",
     title: "",
     company: "",
     location: "",
-    department: "",
-    seniority: "",
     industry: "",
-    keywords: "",
   });
   const [sortConfig, setSortConfig] = useState<{
     key: string | null;
@@ -61,6 +59,10 @@ export default function SearchTab() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const size = 50;
+
+  useEffect(() => {
+    setSelectedLeads([]);
+  }, [page]);
 
   const toggleAll = () => {
     if (selectedLeads.length === leads.length && leads.length > 0) {
@@ -156,7 +158,27 @@ export default function SearchTab() {
       setLoading(true);
     }
     try {
-      await leadService.uploadLeads(file);
+      const responseData = await leadService.uploadLeads(file);
+      // Check response for errors
+      const response = responseData?.data
+      if (response.failed && response.failed > 0) {
+        // If there are failed rows, show error toast
+        const errorMessages = response.errors
+          .map((e: any) => `Row ${e.row_number}: ${e.error}`)
+          .join("\n");
+
+        toast.error(`Some leads failed to upload:\n${errorMessages}`, {
+          duration: 5000,
+        });
+      } else if (response.inserted && response.inserted > 0) {
+        // Success toast
+        toast.success(
+          `Successfully uploaded ${response.inserted} lead${response.inserted > 1 ? "s" : ""}`,
+        );
+      } else {
+        // Handle case where nothing was inserted
+        toast("No leads were uploaded", { icon: "⚠️" });
+      }
       setShowUploadModal(false);
       fetchLeads();
     } catch (error) {
@@ -227,7 +249,7 @@ export default function SearchTab() {
         } else {
           toast.success("Lead updated successfully");
           setCreateModal(false);
-          setIsUpdate(false)
+          setIsUpdate(false);
           fetchLeads();
         }
       }
@@ -371,7 +393,14 @@ export default function SearchTab() {
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-4 gap-4 mb-2 pb-2 border-b border-slate-200">
+          <div className="grid grid-cols-5 gap-4 mb-2 pb-2 border-b border-slate-200">
+            <input
+              type="text"
+              placeholder="Name"
+              value={filters.name}
+              onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
             <input
               type="text"
               placeholder="Title"
@@ -387,6 +416,15 @@ export default function SearchTab() {
               value={filters.company}
               onChange={(e) =>
                 setFilters({ ...filters, company: e.target.value })
+              }
+              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+            <input
+              type="text"
+              placeholder="Industry"
+              value={filters.industry}
+              onChange={(e) =>
+                setFilters({ ...filters, industry: e.target.value })
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
@@ -417,15 +455,7 @@ export default function SearchTab() {
               }
               className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             /> */}
-            <input
-              type="text"
-              placeholder="Industry"
-              value={filters.industry}
-              onChange={(e) =>
-                setFilters({ ...filters, industry: e.target.value })
-              }
-              className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
+
             {hasActiveFilters && (
               <button
                 onClick={() => {
@@ -433,10 +463,8 @@ export default function SearchTab() {
                     title: "",
                     company: "",
                     location: "",
-                    department: "",
-                    seniority: "",
+                    name: "",
                     industry: "",
-                    keywords: "",
                   });
                   setSearchQuery("");
                 }}

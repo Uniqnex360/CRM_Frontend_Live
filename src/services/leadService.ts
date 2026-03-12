@@ -25,6 +25,7 @@ export class LeadService {
     if (filters?.industry) params.industry = filters.industry;
     if (filters?.company) params.company = filters.company;
     if (filters?.location) params.location = filters.location;
+    if(filters?.name) params.name = filters.name;
     if (sort_by) params.sort_by= sort_by;
     if (sort_order) params.sort_order = sort_order;
 
@@ -51,7 +52,7 @@ export class LeadService {
       const lastName = nameParts.slice(1).join(" ") || "";
 
       const location = [item.city, item.country].filter(Boolean).join(", ");
-      const phone = item.direct_no || item.hq_no || "";
+      const phone = item.primary_number || item.hq_no || "--";
       const emailStatus = item.email_id ? "verified" : "unverified";
       return {
         id: item._id,
