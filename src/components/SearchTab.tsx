@@ -28,8 +28,12 @@ import Drawer from "./common/Drawer";
 import AppPagination from "./common/AppPaginatin";
 import AppFormInput from "./common/AppFormInput";
 import AppModal from "./common/AppModel";
+import { ListService } from "../services/listService";
+import { ListResponse, ListAPIResponse } from "../services/listService";
+import { MultiSelectObjects } from "./common/MultiSelectObjects";
 
 const leadService = new LeadService();
+const listService = new ListService();
 
 export default function SearchTab() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,6 +66,13 @@ export default function SearchTab() {
   const [size, setSize] = useState(20);
   const [selectAllResults, setSelectAllResults] = useState(false);
   const [addListModal, setAddListModal] = useState(false);
+  const [listGroups, setListGroups] = useState<ListResponse[]>([]);
+  const [selectedListGroups, setSelectedListGroups] = useState<
+    {
+      id: string;
+      value: string;
+    }[]
+  >([]);
 
   useEffect(() => {
     if (selectAllResults) {
@@ -73,6 +84,56 @@ export default function SearchTab() {
       setSelectedLeads([]);
     }
   }, [selectAllResults, page, leads]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchLeads();
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, filters, page, sortConfig]);
+
+  useEffect(() => {
+    fetchListGroup();
+  }, []);
+
+  const fetchLeads = async () => {
+    setLoading(true);
+    try {
+      const data = await leadService.getLeads(
+        searchQuery,
+        filters,
+        page,
+        sortConfig.key,
+        sortConfig.direction,
+      );
+      setLeads(data?.items);
+      setTotal(data?.total);
+      setSize(data?.size);
+    } catch (error) {
+      console.error("Failed to fetch status", error);
+      toast.error("Failed to fetch status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchListGroup = async () => {
+    try {
+      const data: ListAPIResponse = await listService.getList();
+      setListGroups(data?.data);
+    } catch (error: any) {
+      console.log(error);
+    }
+    return {};
+  };
+
+  const toggleLeadSelection = (id: string) => {
+    if (!id) return;
+
+    setSelectedLeads((prev) =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id],
+    );
+  };
 
   const toggleAll = () => {
     if (selectedLeads.length === leads.length && leads.length > 0) {
@@ -106,34 +167,6 @@ export default function SearchTab() {
     );
   };
 
-  const fetchLeads = async () => {
-    setLoading(true);
-    try {
-      const data = await leadService.getLeads(
-        searchQuery,
-        filters,
-        page,
-        sortConfig.key,
-        sortConfig.direction,
-      );
-      setLeads(data?.items);
-      setTotal(data?.total);
-      setSize(data?.size);
-    } catch (error) {
-      console.error("Failed to fetch status", error);
-      toast.error("Failed to fetch status");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchLeads();
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters, page, sortConfig]);
-
   const handleToggleFavorite = async (id: string, currentStatus: boolean) => {
     try {
       setLeads((prev) =>
@@ -148,6 +181,7 @@ export default function SearchTab() {
       fetchLeads();
     }
   };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
@@ -199,6 +233,7 @@ export default function SearchTab() {
       setIsUploading(false);
     }
   };
+
   const handleExport = async () => {
     try {
       setExporting(true);
@@ -232,13 +267,6 @@ export default function SearchTab() {
       setSelectAllResults(false);
     }
   };
-  const toggleLeadSelection = (id: string) => {
-    if (!id) return;
-
-    setSelectedLeads((prev) =>
-      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id],
-    );
-  };
 
   const getEmailStatusColor = (status: string) => {
     switch (status) {
@@ -254,6 +282,7 @@ export default function SearchTab() {
   const { register, handleSubmit, reset, formState } = useForm<Lead>({
     mode: "onSubmit", // ensures validation runs only on submit
   });
+
   const onSubmit = async (data) => {
     try {
       setCUDLoading(true);
@@ -330,6 +359,41 @@ export default function SearchTab() {
       address: data.address,
     });
     setCreateModal(true);
+  };
+
+  const handleListGroupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      for (const lg of selectedListGroups) {
+        if (selectAllResults) {
+          const payload = {
+            keyword: searchQuery || null,
+            name: filters.name || null,
+            title: filters.title || null,
+            company: filters.company || null, // fixed, was filters.title
+            industry: filters.industry || null,
+            location: filters.location || null, // fixed, was filters.industry
+          };
+          await listService.addLeadToGroup(lg.id, payload);
+        } else if (selectedLeads.length > 0) {
+          const payload = {
+            entity_ids: selectedLeads,
+          };
+          await listService.addLeadToGroup(lg.id, payload);
+        } else {
+          await listService.addLeadToGroup(lg.id);
+        }
+      }
+    } catch (error: any) {
+      console.error(error);
+    } finally {
+      // Clear selections and close modal **after all API calls are done**
+      setSelectedListGroups([]);
+      setAddListModal(false);
+      setSelectAllResults(false);
+      setSelectedLeads([]);
+    }
   };
 
   const hasActiveFilters =
@@ -1046,11 +1110,37 @@ export default function SearchTab() {
         </Drawer>
       </div>
       <AppModal
-        title="Add Leads to List Group"
+        title={`Add ${selectAllResults ? total : selectedLeads.length} leads to list
+            group`}
         isOpen={addListModal}
         onClose={() => setAddListModal(false)}
       >
-        <h1>Hello world</h1>
+        <div className="flex flex-col items-center justify-center h-[30vh]">
+          <form onSubmit={handleListGroupSubmit} className="space-y-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Select List Groups
+            </label>
+            <MultiSelectObjects
+              options={listGroups.map((l) => {
+                return {
+                  id: l.id,
+                  value: l.list_name,
+                };
+              })}
+              value={selectedListGroups}
+              onChange={setSelectedListGroups}
+              placeholder="Choose list groups..."
+              searchable
+              selectAllLabel="Select All List Groups"
+            />
+            <button
+              type="submit"
+              className="mt-38 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-center"
+            >
+              Submit
+            </button>
+          </form>
+        </div>
       </AppModal>
     </>
   );
