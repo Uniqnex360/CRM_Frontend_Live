@@ -33,7 +33,6 @@ export class CompanyService {
   }
   async exportCompany(data?: any) {
     const token = localStorage.getItem("access_token");
-
     const response = await fetch(`${API_BASE_URL}/export/company/excel`, {
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
@@ -86,7 +85,6 @@ export class CompanyService {
 
     const mappedItems: CompanyResponse[] = rawData.items.map((item) => {
       const location = [item.city, item.country].filter(Boolean).join(", ");
-      console.log("item", item);
       const foundedYear =
         item.founding_year != null
           ? String(item.founding_year).split(".")[0]
@@ -101,7 +99,7 @@ export class CompanyService {
         industry: item.industry || "--",
         employeeCount: String(item.employee_size || ""),
         revenue: String(item.gross_revenue || ""),
-        country: item.country || "",
+        country: [item.city, item.country].filter(Boolean).join(", "),
         location,
         amazon_existing: item.amazon_existing,
         founded: foundedYear,
@@ -115,7 +113,7 @@ export class CompanyService {
         leads: item.leads,
       };
     });
-
+    console.log(mappedItems)
     return {
       ...rawData,
       items: mappedItems,
