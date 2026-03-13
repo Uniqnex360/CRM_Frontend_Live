@@ -248,16 +248,13 @@ export default function SearchTab() {
             location: filters.industry || null,
           },
         };
-        console.log("payload", payload);
         await leadService.exportLeads(payload);
       } else if (selectedLeads.length > 0) {
         const payload = {
           lead_ids: selectedLeads,
         };
-        console.log("payload", payload);
         await leadService.exportLeads(payload);
       } else {
-        console.log("payload");
         await leadService.exportLeads();
       }
     } catch (error) {
@@ -420,7 +417,7 @@ export default function SearchTab() {
           </button>
         </div>
 
-        {showUploadModal && (
+        {/* {showUploadModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">
@@ -452,6 +449,53 @@ export default function SearchTab() {
                   </>
                 )}
               </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  disabled={isUploading}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )} */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Upload Leads
+              </h3>
+              Upload a CSV or Excel file with your lead data. The file should
+              include columns for company name, email
+              <label className="block border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition">
+                {isUploading ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
+                    <p className="text-sm text-slate-600">Processing file...</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+
+                    <span className="text-blue-600 hover:text-blue-700 font-medium">
+                      Choose a file
+                    </span>
+
+                    <p className="text-xs text-slate-500 mt-2">
+                      CSV, XLS, or XLSX up to 10MB
+                    </p>
+
+                    <input
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </>
+                )}
+              </label>
               <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setShowUploadModal(false)}

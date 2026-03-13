@@ -48,7 +48,7 @@ export class LeadService {
     // Map each raw item to Lead interface
     const mappedItems: Lead[] = rawData.items.map((item) => {
       const nameParts = (item.name || "").split(" ");
-      const firstName = nameParts[0] || "";
+      const firstName = nameParts[0] || "N/A";
       const lastName = nameParts.slice(1).join(" ") || "";
 
       const location = [item.city, item.country].filter(Boolean).join(", ");
@@ -58,7 +58,7 @@ export class LeadService {
         id: item._id,
         firstName,
         lastName,
-        name: item.name,
+        name: item.name || "NA",
         title: item.title,
         company: item?.company_name ? item.company_name : "--",
         email: item.email_id || "",
@@ -66,7 +66,7 @@ export class LeadService {
         phone,
         location,
         industry: item.industry || item.vertical || "--",
-        keywords: item.site_search || [],
+        keywords: item.keywords || [],
         added_to_favourites: item.added_to_favourites || false,
         domain: item.domain,
         company_linkedin_source: item.company_linkedin_source,

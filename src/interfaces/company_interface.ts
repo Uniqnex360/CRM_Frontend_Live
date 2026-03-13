@@ -23,6 +23,7 @@ export interface Company {
   companyEmail: string;
   companyPhone: string;
   linkedinUrl: string;
+  keywords?: string[],
   leads: CompanyContact[];
   added_to_favourites: boolean;
   is_active: boolean;

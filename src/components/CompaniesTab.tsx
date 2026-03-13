@@ -50,14 +50,31 @@ export default function CompaniesTab() {
   // pagination states
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const size = 50;
+  const [size, setSize] = useState(0);
   // create or update states
   const [cuModal, setCUModal] = useState(false);
   const [isUpdate, setIsUpdate] = useState(false);
   const [cudLoading, setCUDLoading] = useState(false);
+  // extra features
+  const [selectedAllResults, SetSelectedAllResults] = useState(false);
 
-  //toggle states
-  const [toggleId, setToggleID] = useState("");
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCompanies();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, filters, page]);
+
+  useEffect(() => {
+    if (selectedAllResults) {
+      setSelectedCompanies((prev) => {
+        const unique = new Set([...prev, ...companies.map((c) => c.id)]);
+        return Array.from(unique);
+      });
+    } else {
+      setSelectedCompanies([]);
+    }
+  }, [selectedAllResults, page, companies]);
 
   const toggleCompany = (id: string) => {
     setSelectedCompanies((prev) =>
@@ -70,6 +87,7 @@ export default function CompaniesTab() {
       prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id],
     );
   };
+
   const fetchCompanies = async () => {
     setLoading(true);
     try {
@@ -80,6 +98,7 @@ export default function CompaniesTab() {
       );
       setCompanies(data?.items || []);
       setTotal(data?.total);
+      setSize(data?.size);
     } catch (error) {
       console.error("Failed to fetch companies", error);
       toast.error("Failed to load companies");
@@ -87,17 +106,23 @@ export default function CompaniesTab() {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchCompanies();
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, filters, page]);
 
   const handleExport = async () => {
-    setExporting(true);
     try {
-      if (selectedCompanies.length > 0) {
+      setExporting(true);
+      if (selectedAllResults) {
+        const payload = {
+          filters: {
+            keyword: searchQuery || null,
+            vertical: filters.industry || null,
+            employee_count: filters.employeeCount || null,
+            revenue: filters.revenue || null,
+            location: filters.location || null,
+          },
+        };
+        console.log("all filter export");
+        await companyService.exportCompany(payload);
+      } else if (selectedCompanies.length > 0) {
         const payload = {
           company_ids: selectedCompanies,
         };
@@ -105,12 +130,14 @@ export default function CompaniesTab() {
       } else {
         await companyService.exportCompany();
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
+      toast.error("Failed to export");
     } finally {
       setExporting(false);
+      SetSelectedAllResults(false);
     }
   };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
@@ -142,6 +169,7 @@ export default function CompaniesTab() {
       setIsUploading(false);
     }
   };
+
   const hasActiveFilters =
     searchQuery || Object.values(filters).some((value) => value !== "");
 
@@ -185,7 +213,7 @@ export default function CompaniesTab() {
         } else {
           toast.success("Company updated successfully");
           setCUModal(false);
-          setIsUpdate(false)
+          setIsUpdate(false);
           fetchCompanies();
         }
       }
@@ -255,7 +283,8 @@ export default function CompaniesTab() {
                 Upload a CSV or Excel file with your company data. The file
                 should include columns for company name, domain, industry, etc.
               </p>
-              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
+              {/* <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center
+              ">
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                 <label className="cursor-pointer">
                   <span className="text-blue-600 hover:text-blue-700 font-medium">
@@ -271,7 +300,25 @@ export default function CompaniesTab() {
                 <p className="text-xs text-slate-500 mt-2">
                   CSV, XLS, or XLSX up to 10MB
                 </p>
-              </div>
+              </div> */}
+              <label className="block border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition">
+                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+
+                <span className="text-blue-600 hover:text-blue-700 font-medium">
+                  Choose a file
+                </span>
+
+                <p className="text-xs text-slate-500 mt-2">
+                  CSV, XLS, or XLSX up to 10MB
+                </p>
+
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowUploadModal(false)}
@@ -371,21 +418,44 @@ export default function CompaniesTab() {
               {selectedCompanies.length > 0 && (
                 <>
                   <p className="text-sm text-blue-600 font-medium">
-                    {selectedCompanies.length} selected
+                    {selectedAllResults ? total : selectedCompanies.length}{" "}
+                    selected
                   </p>
-                  <button
-                    onClick={() => {
-                      setSelectedCompanies([]);
-                    }}
-                    className="px-3 py-1.5 text-sm font-medium text-red-600 rounded-md text-left"
-                  >
-                    Clear Selection
-                  </button>
+                  {!selectedAllResults && (
+                    <button
+                      onClick={() => {
+                        setSelectedCompanies([]);
+                        SetSelectedAllResults(false);
+                      }}
+                      className="px-3 py-1.5 text-sm font-medium text-red-600 rounded-md text-left"
+                    >
+                      Clear Selection
+                    </button>
+                  )}
                 </>
+              )}
+              {companies.length > 0 && (
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    SetSelectedAllResults(!selectedAllResults);
+                  }}
+                  style={{
+                    color: "#2563eb",
+                    textDecoration: "underline",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {selectedAllResults
+                    ? "Clear Selection"
+                    : "Select All Results"}
+                </a>
               )}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <div className="">
                 <AppPagination
                   total={total}
@@ -568,6 +638,25 @@ export default function CompaniesTab() {
                               </a>
                             </div>
                           )}
+                          <div className="flex gap-2">
+                            {company?.keywords &&
+                              company.keywords.map((k, i) => (
+                                <span
+                                  key={i}
+                                  className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200"
+                                >
+                                  {k}
+                                </span>
+                              ))}
+                          </div>
+                          {/* <div className="flex gap-2">
+                            <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200">
+                              React JS
+                            </span>
+                            <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200">
+                              React JS
+                            </span>
+                          </div> */}
                         </div>
 
                         <div className="flex flex-wrap gap-2 mb-3">

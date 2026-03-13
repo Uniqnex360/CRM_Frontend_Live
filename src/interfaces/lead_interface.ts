@@ -91,6 +91,6 @@ export interface Lead {
   emailStatus: "verified" | "unverified" | "likely";
   phone?: string;
   location?: string;
-  keywords: string[];
+  keywords?: string[];
   added_to_favourites: boolean;
 }
