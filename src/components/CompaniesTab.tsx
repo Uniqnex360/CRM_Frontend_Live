@@ -638,6 +638,17 @@ export default function CompaniesTab() {
                               </a>
                             </div>
                           )}
+                          <div className="flex gap-2">
+                            {company?.keywords &&
+                              company.keywords.map((k, i) => (
+                                <span
+                                  key={i}
+                                  className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200"
+                                >
+                                  {k}
+                                </span>
+                              ))}
+                          </div>
                           {/* <div className="flex gap-2">
                             <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md border border-slate-200">
                               React JS

@@ -66,7 +66,7 @@ export class LeadService {
         phone,
         location,
         industry: item.industry || item.vertical || "--",
-        keywords: item.site_search || [],
+        keywords: item.keywords || [],
         added_to_favourites: item.added_to_favourites || false,
         domain: item.domain,
         company_linkedin_source: item.company_linkedin_source,
