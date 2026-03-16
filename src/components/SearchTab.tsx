@@ -119,7 +119,7 @@ export default function SearchTab() {
 
   const fetchListGroup = async () => {
     try {
-      const data: ListAPIResponse = await listService.getList();
+      const data: ListAPIResponse = await listService.getList("people");
       setListGroups(data?.data);
     } catch (error: any) {
       console.log(error);
@@ -396,7 +396,7 @@ export default function SearchTab() {
   };
 
   const hasActiveFilters =
-    searchQuery || Object.values(filters).some((value) => value !== "");
+    searchQuery || Object.values(filters).some((value) => value !== "" || (sortConfig.key !== null));
 
   return (
     <>
@@ -606,6 +606,7 @@ export default function SearchTab() {
                       name: "",
                       industry: "",
                     });
+                    setSortConfig({ key: null, direction: "asc" });
                     setSearchQuery("");
                   }}
                   className="px-3 py-1.5 text-sm font-medium text-red-600 rounded-md text-left"

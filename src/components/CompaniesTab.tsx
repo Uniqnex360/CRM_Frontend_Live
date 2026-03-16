@@ -159,12 +159,29 @@ export default function CompaniesTab() {
       setLoading(true);
     }
     try {
-      await companyService.uploadCompanies(file);
+      const responseData = await companyService.uploadCompanies(file);
+      const response = responseData?.data;
+
+      if (response.failed && response.failed > 0) {
+        const errorMessages = response.errors
+          .map((e: any) => `Row ${e.row_number}: ${e.error}`)
+          .join("\n");
+
+        toast.error(`Some leads failed to upload:\n${errorMessages}`, {
+          duration: 5000,
+        });
+      } else if (response.inserted && response.inserted > 0) {
+        toast.success(
+          `Successfully uploaded ${response.inserted} lead${response.inserted > 1 ? "s" : ""}`,
+        );
+      } else {
+        toast("No leads were uploaded", { icon: "⚠️" });
+      }
       setShowUploadModal(false);
       fetchCompanies();
     } catch (error) {
       console.error("Upload failed", error);
-      toast.error("Upload failed,Please check  the file format");
+      toast.error("Upload failed, Please check  the file format");
     } finally {
       setIsUploading(false);
     }
