@@ -19,9 +19,11 @@ export type ListAPIResponse = {
 };
 
 export class ListService {
-  async getList(): Promise<ListAPIResponse> {
+  async getList(type: string = ""): Promise<ListAPIResponse> {
     // list api
-    const rawData = (await api.get(`/list/view_lists`)) as ListResponse[];
+    const rawData = (await api.get(`/list/view_lists`, {
+      type,
+    })) as ListResponse[];
     //for now we are mimiking the pagination response
     return {
       page: 0,
@@ -38,19 +40,19 @@ export class ListService {
 
   //update api
   async updateList(id: string, listData: Partial<ListResponse>) {
-    const result = await api.put(`/list/${id}/`, listData)
-    return result
+    const result = await api.put(`/list/${id}/`, listData);
+    return result;
   }
 
   //delete api
   async deleteList(id: string) {
-    const result = await api.delete(`/list/${id}/`)
-    return result
+    const result = await api.delete(`/list/${id}/`);
+    return result;
   }
 
   // add lead to list group
-  async addLeadToGroup(id: string, payload?:any) {
-    const result = await api.post(`/list/${id}/add_members/`, payload)
+  async addLeadToGroup(id: string, payload?: any) {
+    const result = await api.post(`/list/${id}/add_members/`, payload);
     return result;
   }
 }
