@@ -13,8 +13,12 @@ import {
   Settings,
   Sparkles,
   LogOut,
+  icons,
+  User,
 } from "lucide-react";
 
+import OrganizationPage from "./pages/Organization/Organization";
+import UserPage from "./pages/User/UserPage";
 import SearchTab from "./components/SearchTab";
 import CompaniesTab from "./components/CompaniesTab";
 import ListsTab from "./components/ListsTab";
@@ -44,6 +48,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 type Tab =
+  | "organization"
+  | "user"
   | "search"
   | "companies"
   | "lists"
@@ -56,7 +62,7 @@ function DashboardLayout() {
   const [activeTab, setActiveTab] = useState<Tab>("search");
   const { user, logout } = useAuth();
 
-  const tabs = [
+  let tabs = [
     { id: "search" as Tab, label: "Leads", icon: Search },
     { id: "companies" as Tab, label: "Companies", icon: Building2 },
     { id: "lists" as Tab, label: "Lists", icon: List },
@@ -66,8 +72,20 @@ function DashboardLayout() {
     { id: "settings" as Tab, label: "Settings", icon: Settings },
   ];
 
+  if (user?.role === "super_admin") {
+    tabs = [
+      { id: "organization" as Tab, label: "Organization", icon: Users },
+      { id: "user" as Tab, label: "Users", icon: User },
+      ...tabs,
+    ];
+  }
+
   const renderContent = () => {
     switch (activeTab) {
+      case "organization":
+        return <OrganizationPage />;
+      case "user":
+        return <UserPage />;
       case "search":
         return <SearchTab />;
       case "companies":
@@ -157,7 +175,9 @@ function DashboardLayout() {
           </div>
           {/* content */}
           <div className="flex-1 h-full">
-            <main className="flex-1 flex flex-col overflow-hidden min-h-0">{renderContent()}</main>
+            <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+              {renderContent()}
+            </main>
           </div>
         </div>
       </div>

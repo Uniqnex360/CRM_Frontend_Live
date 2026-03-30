@@ -32,8 +32,18 @@ export const api = {
       headers: getHeaders(),
       body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error(`Error occured :${response.statusText}`);
-    return response.json();
+
+    const data = await response.json(); // always read body
+
+    if (!response.ok) {
+      throw new Error(
+        data?.detail ||
+          data?.message ||
+          `Error occurred: ${response.statusText}`,
+      );
+    }
+
+    return data; // successful response
   },
   postForm: async (endpoint: string, body: FormData) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
