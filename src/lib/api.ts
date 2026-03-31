@@ -77,9 +77,15 @@ export const api = {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) throw new Error(`Error occured :${response.statusText}`);
-
-    return response.json();
+    // if (!response.ok) throw new Error(`Error occured :${response.statusText}`);
+    const data = await response.json();
+    return {
+      ok: response.ok,
+      res: response.status === 200 ? "success" : "error",
+      status: response.status, // HTTP status code, e.g., 200, 400
+      statusText: response.statusText, // "OK", "Bad Request"
+      data,
+    };
   },
   delete: async (endpoint: string) => {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {

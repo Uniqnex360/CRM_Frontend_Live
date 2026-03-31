@@ -12,4 +12,9 @@ export class UserService {
     return listData;
   }
 
+  // assing organization to user
+  async assignUserOrganization(user_id: string, body: any): Promise<any> {
+    const response = await api.put(`/admin/assign-company/${user_id}/`, body);
+    return response.data;
+  }
 }
