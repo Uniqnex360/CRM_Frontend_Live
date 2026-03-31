@@ -7,6 +7,7 @@ import {
   Search,
   Building2,
   Users,
+  LayoutDashboard,
   List,
   Send,
   BarChart3,
@@ -18,6 +19,9 @@ import {
 } from "lucide-react";
 
 import OrganizationPage from "./pages/Organization/Organization";
+import SuperAdminDashboard from "./pages/Dashboard/SuperAdminDashboard";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import AdminUserPage from "./pages/User/AdminUserPage";
 import UserPage from "./pages/User/UserPage";
 import SearchTab from "./components/SearchTab";
 import CompaniesTab from "./components/CompaniesTab";
@@ -48,8 +52,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 type Tab =
+  | "super_admin_dashboard"
+  | "dashboard"
   | "organization"
   | "user"
+  | "admin_user"
   | "search"
   | "companies"
   | "lists"
@@ -74,14 +81,48 @@ function DashboardLayout() {
 
   if (user?.role === "super_admin") {
     tabs = [
+      {
+        id: "super_admin_dashboard" as Tab,
+        label: "Dashboard",
+        icon: LayoutDashboard,
+      },
       { id: "organization" as Tab, label: "Organization", icon: Users },
       { id: "user" as Tab, label: "Users", icon: User },
+      ...tabs,
+    ];
+  } else if (user?.role === "admin") {
+    tabs = [
+      {
+        id: "dashboard" as Tab,
+        label: "Dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "admin_user" as Tab,
+        label: "Users",
+        icon: User,
+      },
+      ...tabs,
+    ];
+  } else {
+    tabs = [
+      {
+        id: "dashboard" as Tab,
+        label: "Dashboard",
+        icon: LayoutDashboard,
+      },
       ...tabs,
     ];
   }
 
   const renderContent = () => {
     switch (activeTab) {
+      case "super_admin_dashboard":
+        return <SuperAdminDashboard />;
+      case "dashboard":
+        return <Dashboard />;
+      case "admin_user":
+        return <AdminUserPage />;
       case "organization":
         return <OrganizationPage />;
       case "user":

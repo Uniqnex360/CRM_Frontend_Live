@@ -24,7 +24,6 @@ const OrganizationPage = () => {
     try {
       setListLoading(true);
       const data = await service.getOrganization(search);
-      console.log("data", data)
       setListData(data || []);
       setTotal(data.length || 0);
     } catch (error: any) {

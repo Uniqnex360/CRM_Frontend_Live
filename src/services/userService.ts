@@ -1,5 +1,5 @@
 import { api } from "../lib/api";
-import { IUnassignedUserListResponse } from "../interfaces/user";
+import { IAdminUserCU, IUnassignedUserListResponse } from "../interfaces/user";
 
 export class UserService {
   // list api for organization list
@@ -16,5 +16,16 @@ export class UserService {
   async assignUserOrganization(user_id: string, body: any): Promise<any> {
     const response = await api.put(`/admin/assign-company/${user_id}/`, body);
     return response.data;
+  }
+
+  // admin users
+  async getUsersForAdmin() {
+    const response = await api.get("/user/view/");
+    return response;
+  }
+
+  async createUser(userData: Partial<IAdminUserCU>) {
+    const result = await api.post("/user/create-admin/", userData);
+    return result;
   }
 }
