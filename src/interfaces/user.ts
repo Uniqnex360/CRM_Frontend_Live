@@ -11,3 +11,12 @@ export interface IUnassignedUserListResponse {
   size: number;
   data: IUser[];
 }
+
+export interface IAdminUserCU {
+  id?: string;
+  name: string;
+  email: string;
+  password: string;
+  role: "user" | "admin";
+}
+
