@@ -28,4 +28,9 @@ export class UserService {
     const result = await api.post("/user/create-admin/", userData);
     return result;
   }
+
+  async changeUserRole(user_id: string) {
+    const result = await api.put(`/user/promote-admin/${user_id}`, {});
+    return result;
+  }
 }
