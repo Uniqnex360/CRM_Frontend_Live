@@ -20,12 +20,11 @@ const OrganizationPage = () => {
   //create
   const [createModal, setCreateModal] = useState(false);
 
-  const closeCreateModal = () => setCreateModal(false);
-
   const fetchOrganization = async () => {
     try {
       setListLoading(true);
       const data = await service.getOrganization(search);
+      console.log("data", data)
       setListData(data || []);
       setTotal(data.length || 0);
     } catch (error: any) {

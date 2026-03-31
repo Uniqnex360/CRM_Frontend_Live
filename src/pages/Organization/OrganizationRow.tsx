@@ -2,8 +2,9 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface ChildDetail {
-  key: string;
-  value: string | number;
+  name: string;
+  email: string;
+  role: string;
 }
 
 interface OrgProps {
@@ -11,7 +12,7 @@ interface OrgProps {
     org_name: string;
     industry: string;
     location: string;
-    children?: ChildDetail[]; // dynamic list of objects
+    users?: ChildDetail[]; // dynamic list of objects
   };
 }
 
@@ -38,17 +39,19 @@ const OrganizationRow = ({ org }: OrgProps) => {
           )}
         </div>
       </div>
+      <p className="text-sm mt-2 text-blue-600">no of users: {org?.users?.length || 0}</p>
 
       {/* Dropdown content */}
-      {open && org.children && org.children.length > 0 && (
+      {open && org.users && org.users.length > 0 && (
         <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          {org.children.map((child, index) => (
+          {org.users.map((child, index) => (
             <div
               key={index}
               className="flex justify-between p-2 mb-2 bg-white rounded-md shadow-sm hover:bg-gray-100 transition-colors"
             >
-              <span className="text-gray-700 font-medium">{child.key}</span>
-              <span className="text-gray-600">{child.value}</span>
+              <span className="text-gray-700 font-medium">{child.name}</span>
+              <span className="text-gray-600">{child.email}</span>
+              <span className="text-gray-600">{child.role}</span>
             </div>
           ))}
         </div>
